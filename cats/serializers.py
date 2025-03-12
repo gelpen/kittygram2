@@ -34,7 +34,14 @@ class CatSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'color', 'birth_year', 'achievements', 'owner',
                   'age')
         read_only_fields = ('owner',)
-
+#++Такую же проверку нужно реализовать и на уровне сериализатора. 
+    validators = [
+            UniqueTogetherValidator(
+                queryset=Cat.objects.all(),
+                fields=('name', 'owner')
+            )
+        ]    
+#--Такую же проверку нужно реализовать и на уровне сериализатора.
     def get_age(self, obj):
         return dt.datetime.now().year - obj.birth_year
 
@@ -51,3 +58,15 @@ class CatSerializer(serializers.ModelSerializer):
                 AchievementCat.objects.create(
                     achievement=current_achievement, cat=cat)
             return cat
+        
+    def validate_birth_year(self, value):
+        year = dt.date.today().year
+        if not (year - 40 < value <= year):
+            raise serializers.ValidationError('Проверьте год рождения!')
+        return value
+
+    def validate(self, data):
+        if data['color'] == data['name']:
+            raise serializers.ValidationError(
+                'Имя не может совпадать с цветом!')
+        return data
